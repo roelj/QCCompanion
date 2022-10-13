@@ -1,0 +1,25 @@
+<resources>
+    <string name="app_name">QCCompanion</string>
+    <string name="status_text_initial">Assign audio files using the A-H buttons.</string>
+    <string name="timer_text_initial"></string>
+    <string name="button_a">A</string>
+    <string name="button_b">B</string>
+    <string name="button_c">C</string>
+    <string name="button_d">D</string>
+    <string name="button_e">E</string>
+    <string name="button_f">F</string>
+    <string name="button_g">G</string>
+    <string name="button_h">H</string>
+    <string name="player_status_stopped">Stopped</string>
+    <string name="player_status_playing">Playing</string>
+    <string name="filechooser_title">Choose an audio file.</string>
+    <string name="no_midi_support">It looks like your device does not support MIDI.</string>
+    <string name="qc_found">Found the Quad Cortex.</string>
+    <string name="qc_disconnected">Quad Cortex disconnected.</string>
+    <string name="qc_cant_open">Could not open the Quad Cortex device.</string>
+    <string name="button_assigned">Assigned %s to %s.</string>
+    <string name="midi_device_found">Found MIDI device: %s.</string>
+    <string name="playing">Playing %s.</string>
+    <string name="stopped">Stopped %s.</string>
+    <string name="timing">%d</string>
+</resources>

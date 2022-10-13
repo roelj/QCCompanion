@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="primary">#FF6200EE</color>
+    <color name="primary_variant">#FF3700B3</color>
+    <color name="secondary">#FF03DAC5</color>
+    <color name="secondary_variant">#FF018786</color>
+    -->
+    <color name="primary">#FFCCCCCC</color>
+    <color name="primary_variant">#FFAAAAAA</color>
+    <color name="secondary">#FF03DAC5</color>
+    <color name="secondary_variant">#FF018786</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="app_background">#FF111111</color>
+    <color name="text_color">#FFEEEEEE</color>
+    <color name="toggle_button">#FFEEEEEE</color>
+    <color name="assigned_button">#FF99CC99</color>
+    <color name="playing_button">#FFCC3333</color>
+    <color name="timer_background">#FF222222</color>
+    <color name="timer_border">#FF666666</color>
+    <color name="timer_text_color">#FFEEEEEE</color>
+    <color name="playing_status">#FF33CC33</color>
+    <color name="stopped_status">#FFCC3333</color>
+    <color name="button_border_color">#FFCC3333</color>
+    <color name="button_background_color">#FFEEEEEE</color>
+    <color name="button_text_color">#FF111111</color>
+    <color name="button_player_status_stopped">#FFCC3333</color>
+    <color name="button_player_status_playing">#FF33CC33</color>
+</resources>

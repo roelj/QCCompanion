@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<devices>
+    <device manufacturer="Neural DSP" product="Quad Cortex">
+        <output-port name="output" />
+    </device>
+</devices>
