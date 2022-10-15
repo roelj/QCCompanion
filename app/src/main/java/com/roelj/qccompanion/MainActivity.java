@@ -24,18 +24,18 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.app.Activity;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.media.MediaPlayer;
-import android.media.midi.MidiDevice;
-import android.media.midi.MidiDeviceInfo;
-import android.media.midi.MidiDeviceStatus;
-import android.media.midi.MidiManager;
-import android.media.midi.MidiOutputPort;
+
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Looper;
 import android.os.PowerManager;
 import android.util.Log;
@@ -46,19 +46,20 @@ import android.widget.TextView;
 import java.io.File;
 import java.util.HashMap;
 
-public class MainActivity extends AppCompatActivity implements MidiCommandProcessor {
+public class MainActivity extends AppCompatActivity {
 
     private MediaPlayer player;
     private TextView statusText;
     private TextView timerText;
-    private MidiManager midiManager;
     private HashMap<String, Uri> buttonSoundSettings;
     private HashMap<String, Button> toggleButtons;
     private Button playerStatusButton;
     private Button currentlyPlayingButton;
     private Button lastButtonClicked;
+    private Button qcConnectionStateButton;
     private PowerManager.WakeLock wakeLock;
-    private boolean quadCortexIsConnected;
+    private MidiService.MidiServiceBinder midiServiceBinder;
+    private MidiService midiService;
 
     /* --------------------------------------------------------------------
      * UTILITY PROCEDURES
@@ -69,36 +70,6 @@ public class MainActivity extends AppCompatActivity implements MidiCommandProces
         return path.substring(path.lastIndexOf(File.separator) + 1);
     }
 
-    private boolean deviceIsQuadCortex (MidiDeviceInfo info) {
-        Bundle properties = info.getProperties();
-        String manufacturer = properties.getString(MidiDeviceInfo.PROPERTY_MANUFACTURER);
-        String product = properties.getString(MidiDeviceInfo.PROPERTY_PRODUCT);
-
-        return (manufacturer.equals("Neural DSP") && product.equals("Quad Cortex"));
-    }
-
-    private void connectQuadCortexMidiDevice (MidiDeviceInfo info) {
-        if (deviceIsQuadCortex(info)) {
-            statusText.setText(getString(R.string.qc_found));
-
-            if (info.getOutputPortCount() < 1) return;
-
-            midiManager.openDevice(info, new MidiManager.OnDeviceOpenedListener() {
-                @Override
-                public void onDeviceOpened (MidiDevice device) {
-                    if (device == null) {
-                        Log.e("MainActivity", getString(R.string.qc_cant_open));
-                        return;
-                    }
-                    MidiOutputPort outputPort = device.openOutputPort(0);
-                    QuadCortexMidiReceiver receiver = new QuadCortexMidiReceiver();
-                    receiver.registerCallback(MainActivity.this);
-                    outputPort.connect(receiver);
-                    quadCortexIsConnected = true;
-                }
-            }, new Handler(Looper.getMainLooper()));
-        }
-    }
     @Override
     protected void onCreate (Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -110,7 +81,7 @@ public class MainActivity extends AppCompatActivity implements MidiCommandProces
         this.toggleButtons         = new HashMap<>();
         this.buttonSoundSettings   = new HashMap<>();
         this.playerStatusButton    = (Button) findViewById(R.id.playerStatusButton);
-        this.quadCortexIsConnected = false;
+        this.qcConnectionStateButton = (Button) findViewById(R.id.qcConnectionStateButton);
 
         this.toggleButtons.put("A", (Button) findViewById(R.id.buttonA));
         this.toggleButtons.put("B", (Button) findViewById(R.id.buttonB));
@@ -130,33 +101,47 @@ public class MainActivity extends AppCompatActivity implements MidiCommandProces
             statusText.setText(getText(R.string.no_midi_support));
         }
         else {
-            midiManager = (MidiManager) context.getSystemService(Context.MIDI_SERVICE);
+            Log.i("MainActivity::onCreate", "Starting MidiService");
+            Intent serviceIntent = new Intent(MainActivity.this, MidiService.class);
+            bindService (serviceIntent, connection, Context.BIND_AUTO_CREATE);
+            startService(serviceIntent);
 
-            // Make sure the app reflects MIDI device changes.
-            midiManager.registerDeviceCallback(new MidiManager.DeviceCallback() {
-                public void onDeviceAdded (MidiDeviceInfo info) {
-                    connectQuadCortexMidiDevice(info);
-                }
-
-                public void onDeviceRemoved (MidiDeviceInfo info) {
-                    if (deviceIsQuadCortex(info)) {
-                        statusText.setText(getString(R.string.qc_disconnected));
-                        quadCortexIsConnected = false;
-                    }
-                }
-
-                public void onDeviceStatusChanged (MidiDeviceStatus status) {
-                    Log.i("MIDIDeviceChanged", status.toString());
-                }
-            }, new Handler(Looper.getMainLooper()));
         }
+    }
+
+    private final ServiceConnection connection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected (ComponentName className, IBinder service) {
+            MidiService.MidiServiceBinder binder = (MidiService.MidiServiceBinder) service;
+            midiService = binder.getService();
+            midiService.setMainActivity(MainActivity.this);
+            //setQcConnectionState (true);
+        }
+
+        @Override
+        public void onServiceDisconnected (ComponentName arg0) {
+            setQcConnectionState (false);
+        }
+    };
+
+    public void setQcConnectionState (boolean isConnected) {
+        Log.i("MainActivity::setQcConnectionState", String.format("Called with %b", isConnected));
+        int state = R.color.qc_disconnected;
+        if (isConnected) state = R.color.qc_connected;
+        if (qcConnectionStateButton != null) {
+            qcConnectionStateButton.setBackgroundColor(
+                    getResources().getColor(state, getBaseContext().getTheme()));
+        }
+    }
+    public void setStatusText (String text) {
+        statusText.setText(text);
     }
 
     /* --------------------------------------------------------------------
      * FILE DIALOG
      * -------------------------------------------------------------------- */
 
-    private ActivityResultLauncher<Intent> fileChooserActivity = registerForActivityResult(
+    private final ActivityResultLauncher<Intent> fileChooserActivity = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             new ActivityResultCallback<ActivityResult>() {
                 @Override
@@ -179,14 +164,6 @@ public class MainActivity extends AppCompatActivity implements MidiCommandProces
                     statusText.setText(getString(R.string.button_assigned,
                             filenameFromUri(fileUri), buttonName));
 
-                    //if (! quadCortexIsConnected) {
-                    //    for (MidiDeviceInfo info : midiManager.getDevices()) {
-                    //        if (deviceIsQuadCortex(info)) {
-                    //            Log.i("fileChooserActivity", "Found the QC.");
-                    //            connectQuadCortexMidiDevice(info);
-                    //        }
-                    //    }
-                    //}
                 }
             });
 
@@ -196,6 +173,10 @@ public class MainActivity extends AppCompatActivity implements MidiCommandProces
         data = Intent.createChooser(data, getText(R.string.filechooser_title));
         lastButtonClicked = (Button) view;
         fileChooserActivity.launch(data);
+    }
+
+    public void connectToQuadCortex (View view) {
+        midiService.attemptToConnectToQuadCortex();
     }
 
     /* --------------------------------------------------------------------
@@ -266,25 +247,4 @@ public class MainActivity extends AppCompatActivity implements MidiCommandProces
             timerText.postDelayed(this, 15);
         }
     };
-
-    /* --------------------------------------------------------------------
-     * MIDI INPUT
-     * -------------------------------------------------------------------- */
-
-    @Override
-    public void processMidiCommand (int channel_index, int value) {
-        // Use channel 1 for A-H foot switches.
-        if (channel_index == 1) {
-            switch (value) {
-                case 1: this.togglePlayerForButton("A"); break;
-                case 2: this.togglePlayerForButton("B"); break;
-                case 3: this.togglePlayerForButton("C"); break;
-                case 4: this.togglePlayerForButton("D"); break;
-                case 5: this.togglePlayerForButton("E"); break;
-                case 6: this.togglePlayerForButton("F"); break;
-                case 7: this.togglePlayerForButton("G"); break;
-                case 8: this.togglePlayerForButton("H"); break;
-            }
-        }
-    }
 }

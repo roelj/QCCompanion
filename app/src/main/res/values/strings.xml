@@ -15,6 +15,7 @@
     <string name="filechooser_title">Choose an audio file.</string>
     <string name="no_midi_support">It looks like your device does not support MIDI.</string>
     <string name="qc_found">Found the Quad Cortex.</string>
+    <string name="qc_connected">Quad Cortex connected.</string>
     <string name="qc_disconnected">Quad Cortex disconnected.</string>
     <string name="qc_cant_open">Could not open the Quad Cortex device.</string>
     <string name="button_assigned">Assigned %s to %s.</string>

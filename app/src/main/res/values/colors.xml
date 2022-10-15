@@ -28,4 +28,6 @@
     <color name="button_text_color">#FF111111</color>
     <color name="button_player_status_stopped">#FFCC3333</color>
     <color name="button_player_status_playing">#FF33CC33</color>
+    <color name="qc_connected">#FF33CC33</color>
+    <color name="qc_disconnected">#FFCC3333</color>
 </resources>
